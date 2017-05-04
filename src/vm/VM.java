@@ -4,6 +4,7 @@ import static vm.ByteCode.*;
 public class VM {
 	int[] data;
 	int[] code;
+	int[] globals;
 	int[] stack;
 	
 	int ip;
@@ -33,6 +34,42 @@ public class VM {
 								break;
 				case PRINT  :	System.out.println(stack[sp--]);
 								break;
+				case GLOAD  : 	stack[++sp] = globals[code[ip++]];
+								break;
+				case GSTORE :	globals[code[ip++]] = stack[sp--];
+								break;
+				case BR     :   ip = code[ip++];
+								break;
+				case BRT    :  	if(stack[sp--] == 0)
+									ip = code[ip++];
+								break;
+				case BRF    :   if(stack[sp--]== 1)
+									ip = code[ip++];
+								break;
+				case LOAD   :  	int offset = code[ip++];
+								stack[++sp] = stack[fp + offset];
+								break;
+				case CALL   :
+					
+					//expects all args on stack
+					addr = code[ip++];		//targets addr of function
+					int nargs = code[ip++];	//how many args got pushed
+					stack[++sp] = nargs;	//save num args
+					stack[++sp] = fp;		//save frame pointer
+					stack[++sp] = ip;		//push return address
+					fp = sp;				//fp points to returning address on stack;
+					ip = addr;				//jump to function
+					break;
+				case RET    :
+					
+					int rvalue = stack[sp--]; //pop return value
+					sp = fp;				  // jump over locals to fp
+					ip = stack[sp--];		//pop return address jump to fp
+					fp = stack[sp--];		//restore fp
+					nargs = stack[sp--];	//how many args to throw away
+					sp -= nargs;			//pop args
+					stack[++sp] = rvalue;	//leave result on stack
+					break;
 				case HALT   :	return;
 			}			
 		}		
